@@ -10,7 +10,7 @@ Collect X bookmarks and Instagram saves, index their images and video with Gemin
 ## Collect
 - **X:** open `x.com/i/bookmarks` and press **Crawl bookmarks** in the pill at the bottom.
 - **Instagram:** open your profile, then Saved, then **All posts** (or a collection), and press **Crawl saved**.
-- Hover any tweet or Instagram post and tap the Magpie button to save just that one. Shift-click also adds it to your basket.
+- On Twitter, every tweet gets a Magpie save button in its header, right before the ellipsis. On Instagram, hover a post and tap the Magpie button. Shift-click also adds it to your basket.
 - Right-click any page, link or image and choose **Stash in Magpie**.
 
 Collecting works without a key. Saves wait as "Needs key" until you add one, then index in the background.
