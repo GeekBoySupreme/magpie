@@ -5,7 +5,7 @@
   --mgp-spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
   --mgp-font: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
-.mgp-dock.mgp-x { --mgp-c1: #3a6dff; --mgp-c2: #45c6ff; }
+.mgp-dock.mgp-x { --mgp-c1: #1d9bf0; --mgp-c2: #1d9bf0; }
 .mgp-dock.mgp-instagram { --mgp-c1: #ff3d7f; --mgp-c2: #ffb03a; }
 
 /* ---------- dock ---------- */
@@ -113,7 +113,32 @@ article:hover > .mgp-save, a:hover > .mgp-save, .mgp-save:focus-visible, .mgp-sa
 @keyframes mgp-burst { from { transform: scale(1); opacity: .9; } to { transform: scale(2.1); opacity: 0; } }
 
 /* Positions per surface */
-.mgp-save.mgp-tw { left: 21px; top: 66px; }
+/* X: sits inline in the tweet header, right before the "More" ellipsis, styled
+   like X's own header icon buttons (34.75px circle, grey icon, blue on hover). */
+.mgp-save.mgp-tw {
+  position: relative !important; z-index: auto; flex: none; align-self: center;
+  width: 34.75px; height: 34.75px; margin: -8px 0;
+  color: rgb(113, 118, 123); background: transparent; box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  opacity: 1; transform: none;
+  transition: color .2s ease, background-color .2s ease, transform .45s var(--mgp-spring);
+}
+.mgp-save.mgp-tw > svg { width: 18.75px; height: 18.75px; }
+.mgp-save.mgp-tw .mgp-i-mark path { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; transition: fill .2s ease; }
+.mgp-save.mgp-tw .mgp-i-mark circle { fill: currentColor; transition: fill .2s ease; }
+.mgp-save.mgp-tw .mgp-i-check { display: none; }
+.mgp-save.mgp-tw:hover { color: rgb(29, 155, 240); background: rgba(29, 155, 240, .1); transform: none; }
+.mgp-save.mgp-tw:active { transform: scale(.88); }
+.mgp-save.mgp-tw:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 0; }
+.mgp-save.mgp-tw[data-state="saving"]::after { inset: 4px; border-top-color: rgb(29, 155, 240); }
+.mgp-save.mgp-tw[data-state="saved"] { color: rgb(29, 155, 240); background: transparent; box-shadow: none; }
+.mgp-save.mgp-tw[data-state="saved"]:hover { background: rgba(29, 155, 240, .1); }
+.mgp-save.mgp-tw[data-state="saved"] .mgp-i-mark { opacity: 1; transform: none; animation: mgp-pop .5s var(--mgp-spring); }
+.mgp-save.mgp-tw[data-state="saved"] .mgp-i-mark path { fill: currentColor; }
+.mgp-save.mgp-tw[data-state="saved"] .mgp-i-mark circle { fill: #fff; }
+.mgp-save.mgp-tw[data-state="error"] { color: rgb(244, 33, 46); background: rgba(244, 33, 46, .1); }
+.mgp-save.mgp-tw.mgp-burst::before { inset: 6px; box-shadow: 0 0 0 2px rgb(29, 155, 240); }
+@keyframes mgp-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 .mgp-save.mgp-ig-tile { left: 8px; top: 8px; }
 .mgp-save.mgp-ig-post { right: 56px; top: 14px; }
 
