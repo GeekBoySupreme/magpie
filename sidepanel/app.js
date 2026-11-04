@@ -17,7 +17,7 @@ import {
 // ---------------------------------------------------------------------------
 const SPACES = [
   { id: 'all', name: 'Everything', icon: 'spark' },
-  { id: 'x', name: 'X bookmarks', icon: 'x' },
+  { id: 'x', name: 'Twitter bookmarks', icon: 'x' },
   { id: 'instagram', name: 'Instagram saves', icon: 'ig' },
   { id: 'basket', name: 'Basket', icon: 'basket' },
   { id: 'plans', name: 'Plans', icon: 'plan' },
@@ -75,7 +75,7 @@ function scheduleReload() {
 }
 
 // ---------------------------------------------------------------------------
-// Spaces (Arc-style: each has its own colour, swipe or Alt+1…5 to switch)
+// Spaces (swipe or Alt+1…5 to switch)
 // ---------------------------------------------------------------------------
 function renderSpacesNav() {
   $('#spaces').innerHTML = '<span class="sp-ind" aria-hidden="true"></span>' + SPACES.map((s, i) => `
@@ -261,15 +261,15 @@ function cardHTML(it, isNew) {
 
 function emptyHTML(space) {
   const copy = {
-    all: ['Nothing saved yet', 'Open your X bookmarks or Instagram saved posts and press Crawl, or hover any post and tap the Magpie button.'],
-    x: ['No X bookmarks yet', 'Open x.com/i/bookmarks and press Crawl. Magpie scrolls and collects each post, then Gemini indexes its media.'],
+    all: ['Nothing saved yet', 'Open your Twitter bookmarks or Instagram saved posts and press Crawl, or hover any post and tap the Magpie button.'],
+    x: ['No Twitter bookmarks yet', 'Open x.com/i/bookmarks and press Crawl. Magpie scrolls and collects each post, then Gemini indexes its media.'],
     instagram: ['No Instagram saves yet', 'Open your profile, then Saved, then All posts, and press Crawl.'],
     basket: ['Your basket is empty', 'Select saves or drag them onto the basket to build context for a question. You can add open tabs too.'],
     plans: ['No plans yet', 'Ask something like "plan 5 days in Bangkok and Phuket from my saves" and press Save as plan on the answer.'],
   }[space];
-  const cta = space === 'x' ? `<button class="btn primary" data-act="crawl">${ICON.crawl}<span>Open X bookmarks</span></button>`
+  const cta = space === 'x' ? `<button class="btn primary" data-act="crawl">${ICON.crawl}<span>Open Twitter bookmarks</span></button>`
     : space === 'instagram' ? `<button class="btn primary" data-act="crawl">${ICON.crawl}<span>Open Instagram saved</span></button>`
-    : space === 'all' ? `<div class="empty-ctas"><button class="btn" data-act="open-x">${ICON.x}<span>X bookmarks</span></button><button class="btn" data-act="open-ig">${ICON.ig}<span>Instagram saved</span></button></div>` : '';
+    : space === 'all' ? `<div class="empty-ctas"><button class="btn" data-act="open-x">${ICON.x}<span>Twitter bookmarks</span></button><button class="btn" data-act="open-ig">${ICON.ig}<span>Instagram saved</span></button></div>` : '';
   if (S.tag) return `<div class="empty"><h2>Nothing tagged ${esc(S.tag)} here</h2><button class="btn" data-act="clear-tag">Show everything</button></div>`;
   return `<div class="empty"><div class="empty-mark">${ICON[SPACES.find(s => s.id === space).icon]}</div><h2>${copy[0]}</h2><p>${copy[1]}</p>${cta}</div>`;
 }
@@ -817,7 +817,7 @@ async function popEntries(trigger, q) {
   }
   const out = [
     { kind: 'basket', label: 'Basket', sub: `${S.basket.length} item${S.basket.length === 1 ? '' : 's'}`, icon: ICON.basket },
-    { kind: 'space', platform: 'x', label: 'X bookmarks', sub: 'Only search X saves', icon: ICON.x },
+    { kind: 'space', platform: 'x', label: 'Twitter bookmarks', sub: 'Only search Twitter saves', icon: ICON.x },
     { kind: 'space', platform: 'instagram', label: 'Instagram saves', sub: 'Only search Instagram saves', icon: ICON.ig },
     { kind: 'tabs', label: 'All open tabs', sub: 'Read every tab in this window', icon: ICON.tab },
   ].filter(f => !ql || f.label.toLowerCase().includes(ql));
@@ -913,7 +913,7 @@ function onComposerKey(e) {
 const COMMANDS = () => [
   ...SPACES.map((s, i) => ({ label: `Go to ${s.name}`, hint: `${isMac ? '⌥' : 'Alt+'}${i + 1}`, icon: ICON[s.icon], run: () => setSpace(s.id) })),
   { label: 'Crawl the bookmarks page in this tab', icon: ICON.crawl, run: () => crawlActiveTab() },
-  { label: 'Open X bookmarks and crawl', icon: ICON.x, run: () => openAndCrawl('x') },
+  { label: 'Open Twitter bookmarks and crawl', icon: ICON.x, run: () => openAndCrawl('x') },
   { label: 'Open Instagram saved and crawl', icon: ICON.ig, run: () => openAndCrawl('instagram') },
   { label: 'Add this tab to basket', icon: ICON.basket, run: () => addActiveTab() },
   { label: 'New chat', icon: ICON.plus, run: () => newThread() },
@@ -980,7 +980,7 @@ async function activeTab() { const [t] = await chrome.tabs.query({ active: true,
 async function crawlActiveTab() {
   const t = await activeTab();
   const p = isTargetUrl(t?.url || '', 'x') ? 'x' : isTargetUrl(t?.url || '', 'instagram') ? 'instagram' : null;
-  if (!p) { toast('Open your X bookmarks or an Instagram saved collection first', { action: { label: 'Open X', run: () => openAndCrawl('x') } }); return; }
+  if (!p) { toast('Open your Twitter bookmarks or an Instagram saved collection first', { action: { label: 'Open Twitter', run: () => openAndCrawl('x') } }); return; }
   try { await chrome.tabs.sendMessage(t.id, { type: 'crawl:start' }); }
   catch { toast('Reload the page so Magpie can attach, then try again'); }
 }
@@ -1207,7 +1207,7 @@ function showOnboard() {
     <div class="ob-card">
       <div class="ob-mark">${ICON.mark}</div>
       <h1>Magpie</h1>
-      <p class="ob-lede">Collect your X bookmarks and Instagram saves, let Gemini read their images and video, then turn them into plans.</p>
+      <p class="ob-lede">Collect your Twitter bookmarks and Instagram saves, let Gemini read their images and video, then turn them into plans.</p>
       <label class="field"><span>Gemini API key</span><input id="obKey" type="password" placeholder="AIza…" autocomplete="off" value="${esc(S.settings.geminiKey || '')}"></label>
       <small class="ob-small">Create one at aistudio.google.com/apikey. It stays in this browser and is only sent to Google.</small>
       <details class="ob-more"><summary>Add an Exa key for deeper web research</summary><input id="obExa" type="password" placeholder="Exa API key (optional)" autocomplete="off" value="${esc(S.settings.exaKey || '')}"></details>

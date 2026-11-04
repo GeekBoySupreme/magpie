@@ -8,7 +8,8 @@ const sv = p => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" str
 export const ICON = {
   mark: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6.5 3h11A1.5 1.5 0 0 1 19 4.5V21l-7-4.3L5 21V4.5A1.5 1.5 0 0 1 6.5 3z" fill="currentColor"/><circle cx="14.6" cy="8.4" r="1.5" fill="var(--mark-eye, #15121b)"/></svg>',
   spark: sv('<path d="M12 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/><path d="M18.5 15.5l.6 1.8 1.9.7-1.9.6-.6 1.9-.7-1.9-1.8-.6 1.8-.7z"/>'),
-  x: sv('<path d="M5 4.5l14 15M19 4.5L5 19.5"/>'),
+  // Twitter bird; a halo floats above its head on hover (see .bird in sidepanel.css).
+  x: '<svg class="bird" viewBox="32 0 576 576" width="18" height="18" aria-hidden="true"><ellipse class="bird-ring" cx="420" cy="70" rx="80" ry="20"/><path class="bird-path" d="M523.4 215.7C523.7 220.2 523.7 224.8 523.7 229.3C523.7 368 418.1 527.9 225.1 527.9C165.6 527.9 110.4 510.7 64 480.8C72.4 481.8 80.6 482.1 89.3 482.1C138.4 482.1 183.5 465.5 219.6 437.3C173.5 436.3 134.8 406.1 121.5 364.5C128 365.5 134.5 366.1 141.3 366.1C150.7 366.1 160.1 364.8 168.9 362.5C120.8 352.8 84.8 310.5 84.8 259.5V258.2C98.8 266 115 270.9 132.2 271.5C103.9 252.7 85.4 220.5 85.4 184.1C85.4 164.6 90.6 146.7 99.7 131.1C151.4 194.8 229 236.4 316.1 240.9C314.5 233.1 313.5 225 313.5 216.9C313.5 159.1 360.3 112 418.4 112C448.6 112 475.9 124.7 495.1 145.1C518.8 140.6 541.6 131.8 561.7 119.8C553.9 144.2 537.3 164.6 515.6 177.6C536.7 175.3 557.2 169.5 576 161.4C561.7 182.2 543.8 200.7 523.4 215.7Z"/></svg>',
   ig: sv('<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.2" cy="6.8" r=".5" fill="currentColor"/>'),
   web: sv('<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.6 3.5 5.4 3.5 8.5s-1.1 5.9-3.5 8.5c-2.4-2.6-3.5-5.4-3.5-8.5s1.1-5.9 3.5-8.5z"/>'),
   basket: sv('<path d="M4 9.5h16l-1.5 8.8a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7z"/><path d="M8.5 9.5L12 4.5l3.5 5"/>'),
@@ -66,7 +67,7 @@ export function relTime(iso) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) });
 }
 export const fmtNum = n => (n == null ? '' : n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'K' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n));
-export const platformName = p => ({ x: 'X', instagram: 'Instagram', web: 'Web' }[p] || p);
+export const platformName = p => ({ x: 'Twitter', instagram: 'Instagram', web: 'Web' }[p] || p);
 export const platformIcon = p => ({ x: ICON.x, instagram: ICON.ig, web: ICON.web }[p] || ICON.web);
 export function itemTitle(it) {
   if (!it) return 'Save';

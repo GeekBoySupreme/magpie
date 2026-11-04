@@ -112,20 +112,37 @@
     return { ...dom, ...net, text: net.text || dom.text, media: net.media?.length ? net.media : dom.media, metrics: { ...dom.metrics, ...Object.fromEntries(Object.entries(net.metrics || {}).filter(([, v]) => v != null)) } };
   }
 
-  // ---------- overlay buttons on every tweet ----------
+  // ---------- save button in each tweet's header, just before the "More" ellipsis ----------
+  // X re-renders tweet headers freely, so this runs on every mutation and
+  // re-inserts the button whenever it has been dropped or moved.
+  function ownCaret(art) {
+    return [...art.querySelectorAll('[data-testid="caret"]')].find(c => c.closest('article') === art) || null;
+  }
+  function place(art, btn) {
+    const caret = ownCaret(art);
+    const anchor = caret?.parentElement;
+    if (!anchor?.parentElement) return false;
+    if (btn.nextElementSibling !== anchor) anchor.parentElement.insertBefore(btn, anchor);
+    return true;
+  }
   function decorate() {
-    for (const art of document.querySelectorAll('article[data-testid="tweet"]:not([data-mgp])')) {
+    for (const art of document.querySelectorAll('article[data-testid="tweet"]')) {
       const ref = tweetRef(art);
       if (!ref) continue;
-      art.dataset.mgp = '1';
       const id = 'x:' + ref.id;
-      M.ensureRelative(art);
-      const btn = M.makeSaveBtn({
-        id, className: 'mgp-tw',
-        onSave: async ({ basket }) => { const r = await M.ingest(merged(art, id), { basket }); return r && !r.error; },
-      });
-      art.appendChild(btn);
-      M.queueCheck(id);
+      // Virtualized lists recycle <article>s for other tweets.
+      if (art._mgpBtn && art._mgpBtn.dataset.id !== id) { art._mgpBtn.remove(); art._mgpBtn = null; }
+      if (!art._mgpBtn) {
+        art._mgpBtn = M.makeSaveBtn({
+          id, className: 'mgp-tw',
+          onSave: async ({ basket }) => { const r = await M.ingest(merged(art, id), { basket }); return r && !r.error; },
+        });
+        art.dataset.mgp = '1';
+        M.queueCheck(id);
+      }
+      const b = art._mgpBtn;
+      if (b.isConnected && b.nextElementSibling === ownCaret(art)?.parentElement) continue;
+      place(art, b);
     }
   }
   M.observe(decorate);
