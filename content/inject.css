@@ -1,0 +1,139 @@
+/* Magpie in-page UI. Every selector is prefixed to stay out of the site's way. */
+.mgp-dock, .mgp-save, .mgp-toasts {
+  --mgp-c1: #7c6cff;
+  --mgp-c2: #e06bff;
+  --mgp-spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+  --mgp-font: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+.mgp-dock.mgp-x { --mgp-c1: #3a6dff; --mgp-c2: #45c6ff; }
+.mgp-dock.mgp-instagram { --mgp-c1: #ff3d7f; --mgp-c2: #ffb03a; }
+
+/* ---------- dock ---------- */
+.mgp-dock {
+  all: initial;
+  position: fixed; z-index: 2147483600; left: 50%; bottom: 22px;
+  display: flex; align-items: center; gap: 4px; padding: 5px;
+  border-radius: 999px;
+  background: rgba(24, 20, 30, .84);
+  -webkit-backdrop-filter: blur(20px) saturate(1.7); backdrop-filter: blur(20px) saturate(1.7);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -14px rgba(0,0,0,.6), 0 0 0 0 var(--mgp-c1);
+  color: #f3eff8; font: 550 13px/1 var(--mgp-font); letter-spacing: -.005em;
+  transform: translate(-50%, 160%) scale(.86); opacity: 0;
+  transition: transform .7s var(--mgp-spring), opacity .3s ease, box-shadow .6s ease;
+}
+.mgp-dock.mgp-in { transform: translate(-50%, 0) scale(1); opacity: 1; }
+.mgp-dock[data-state="running"] { box-shadow: 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -14px rgba(0,0,0,.6), 0 10px 40px -10px var(--mgp-c1); }
+.mgp-dock button { all: unset; cursor: pointer; box-sizing: border-box; }
+.mgp-dock button:focus-visible { outline: 2px solid var(--mgp-c2); outline-offset: 2px; }
+
+.mgp-dock-main {
+  display: inline-flex !important; align-items: center; gap: 10px;
+  height: 38px; padding: 0 16px 0 11px; border-radius: 999px;
+  color: #fff; font: 620 13px/1 var(--mgp-font) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%), linear-gradient(120deg, var(--mgp-c1), var(--mgp-c2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.22), 0 8px 20px -8px var(--mgp-c1);
+  transition: transform .4s var(--mgp-spring), filter .2s;
+}
+.mgp-dock-main:hover { filter: brightness(1.08); }
+.mgp-dock-main:active { transform: scale(.96) translateY(1px); }
+
+.mgp-chomp { position: relative; display: inline-block; width: 20px; height: 20px; flex: none; }
+.mgp-jaw { position: absolute; left: 0; width: 20px; height: 10px; background: #fff; }
+.mgp-top { top: 0; border-radius: 10px 10px 0 0; transform-origin: 50% 100%; }
+.mgp-bot { bottom: 0; border-radius: 0 0 10px 10px; transform-origin: 50% 0; }
+.mgp-dots {
+  position: absolute; left: 14px; top: 8px; width: 0; height: 4px; overflow: hidden;
+  background: radial-gradient(circle, #fff 1.6px, transparent 2px) 0 50% / 8px 4px repeat-x;
+  transition: width .3s ease;
+}
+.mgp-dock[data-state="running"] .mgp-top { animation: mgp-jaw-top .3s ease-in-out infinite alternate; }
+.mgp-dock[data-state="running"] .mgp-bot { animation: mgp-jaw-bot .3s ease-in-out infinite alternate; }
+.mgp-dock[data-state="running"] .mgp-dots { width: 22px; animation: mgp-dots .6s linear infinite; }
+@keyframes mgp-jaw-top { from { transform: rotate(0); } to { transform: rotate(-34deg); } }
+@keyframes mgp-jaw-bot { from { transform: rotate(0); } to { transform: rotate(34deg); } }
+@keyframes mgp-dots { from { background-position-x: 0; } to { background-position-x: -8px; } }
+
+.mgp-dock-stats { display: inline-flex; align-items: baseline; gap: 5px; padding: 0 10px 0 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mgp-dock-stats[hidden] { display: none; }
+.mgp-n { font: 700 15px/1 var(--mgp-font); display: inline-block; }
+.mgp-n.mgp-tick { animation: mgp-tick .45s var(--mgp-spring); }
+@keyframes mgp-tick { from { transform: translateY(6px) scale(.8); opacity: .3; } }
+.mgp-sub { color: rgba(243,239,248,.6); font-weight: 500; }
+.mgp-new { margin-left: 4px; padding: 3px 7px; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font: 600 11px/1 var(--mgp-font); }
+.mgp-new[hidden] { display: none; }
+
+.mgp-dock-icon {
+  display: inline-grid !important; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  color: rgba(243,239,248,.8); transition: background .2s, color .2s, transform .35s var(--mgp-spring);
+}
+.mgp-dock-icon[hidden] { display: none !important; }
+.mgp-dock-icon:hover { background: rgba(255,255,255,.1); color: #fff; }
+.mgp-dock-icon:active { transform: scale(.9); }
+.mgp-dock-panel .mgp-i-mark { width: 16px; height: 16px; }
+
+/* Each post briefly lights up as it is collected */
+.mgp-eaten { animation: mgp-eaten 1.1s cubic-bezier(.16,1,.3,1); outline-offset: -2px; }
+@keyframes mgp-eaten {
+  0% { outline: 2px solid rgba(124,108,255,0); }
+  18% { outline: 2px solid rgba(124,108,255,.95); }
+  100% { outline: 2px solid rgba(124,108,255,0); }
+}
+
+/* ---------- per-item save button ---------- */
+.mgp-save {
+  all: initial;
+  position: absolute !important; z-index: 6;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; box-sizing: border-box;
+  color: #fff; background: rgba(22,19,28,.74);
+  -webkit-backdrop-filter: blur(10px) saturate(1.6); backdrop-filter: blur(10px) saturate(1.6);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 8px 18px -8px rgba(0,0,0,.6);
+  opacity: 0; transform: scale(.6) translateY(4px);
+  transition: opacity .2s ease, transform .5s var(--mgp-spring), background .3s ease;
+}
+.mgp-save > svg { grid-area: 1 / 1; transition: transform .45s var(--mgp-spring), opacity .2s; }
+.mgp-save .mgp-i-check { opacity: 0; transform: scale(.4) rotate(-20deg); }
+article:hover > .mgp-save, a:hover > .mgp-save, .mgp-save:focus-visible, .mgp-save[data-state] { opacity: 1; transform: none; }
+.mgp-save:hover { background: rgba(40,34,52,.9); transform: scale(1.08); }
+.mgp-save:active { transform: scale(.92); }
+.mgp-save:focus-visible { outline: 2px solid #b4a8ff; outline-offset: 2px; }
+.mgp-save[data-state="saving"]::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 50%;
+  border: 2px solid transparent; border-top-color: #b4a8ff; animation: mgp-spin .7s linear infinite;
+}
+@keyframes mgp-spin { to { transform: rotate(360deg); } }
+.mgp-save[data-state="saved"] { background: linear-gradient(135deg, #7c6cff, #e06bff); box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 8px 18px -8px #7c6cff; }
+.mgp-save[data-state="saved"] .mgp-i-mark { opacity: 0; transform: scale(.4); }
+.mgp-save[data-state="saved"] .mgp-i-check { opacity: 1; transform: none; }
+.mgp-save[data-state="error"] { background: #e5484d; }
+.mgp-save.mgp-burst::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: 0 0 0 2px #e06bff; animation: mgp-burst .6s ease-out forwards;
+}
+@keyframes mgp-burst { from { transform: scale(1); opacity: .9; } to { transform: scale(2.1); opacity: 0; } }
+
+/* Positions per surface */
+.mgp-save.mgp-tw { left: 21px; top: 66px; }
+.mgp-save.mgp-ig-tile { left: 8px; top: 8px; }
+.mgp-save.mgp-ig-post { right: 56px; top: 14px; }
+
+/* ---------- toasts ---------- */
+.mgp-toasts { all: initial; position: fixed; z-index: 2147483601; top: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.mgp-toast {
+  display: flex; align-items: center; gap: 10px; max-width: 360px; padding: 10px 10px 10px 12px;
+  border-radius: 14px; background: rgba(24,20,30,.9); color: #f3eff8;
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.09), 0 18px 40px -16px rgba(0,0,0,.6);
+  font: 500 13px/1.4 var(--mgp-font); pointer-events: auto;
+  opacity: 0; transform: translateY(-10px) scale(.96);
+  transition: opacity .25s ease, transform .55s var(--mgp-spring);
+}
+.mgp-toast.mgp-in { opacity: 1; transform: none; }
+.mgp-toast-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(135deg, #7c6cff, #e06bff); flex: none; }
+.mgp-toast-btn { all: unset; cursor: pointer; padding: 6px 10px; border-radius: 9px; background: rgba(255,255,255,.12); font: 600 12px/1 var(--mgp-font); white-space: nowrap; }
+.mgp-toast-btn:hover { background: rgba(255,255,255,.2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mgp-dock, .mgp-save, .mgp-toast { transition-duration: .01s !important; }
+  .mgp-eaten, .mgp-top, .mgp-bot, .mgp-dots { animation: none !important; }
+}

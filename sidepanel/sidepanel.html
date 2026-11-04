@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-space="all">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Magpie</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="aura" aria-hidden="true"></div>
+
+  <header class="top">
+    <button class="mark" id="markBtn" aria-label="Magpie home"></button>
+    <button class="cmd" id="cmdBtn" aria-label="Search or run a command">
+      <span class="cmd-ico"></span><span class="cmd-text">Search or ask</span><kbd id="cmdKbd">⌘K</kbd>
+    </button>
+    <button class="icon" id="settingsBtn" aria-label="Settings"></button>
+  </header>
+
+  <div class="crawl-strip" id="crawlStrip" hidden></div>
+
+  <div class="main">
+    <main id="stage" class="stage">
+      <section id="spaceView" class="space">
+        <div class="space-head">
+          <div class="space-title-row">
+            <h1 id="spaceTitle">Everything</h1>
+            <div class="space-actions" id="spaceActions"></div>
+          </div>
+          <p class="space-sub" id="spaceSub"></p>
+        </div>
+        <div class="tag-rail" id="tagRail"></div>
+        <div class="pinned" id="pinned"></div>
+        <div class="feed" id="feed"></div>
+        <div id="sentinel" class="sentinel"></div>
+      </section>
+    </main>
+
+    <section class="sheet" id="askSheet" hidden aria-label="Ask">
+      <header class="sheet-head">
+        <button class="thread-btn" id="threadBtn"><span id="threadTitle">New chat</span><span class="tb-ico"></span></button>
+        <div class="grow"></div>
+        <button class="icon" id="newChatBtn" title="New chat"></button>
+        <button class="icon" id="closeAskBtn" title="Back to saves"></button>
+      </header>
+      <div class="thread-menu" id="threadMenu" hidden></div>
+      <div class="thread" id="thread"></div>
+    </section>
+
+    <div class="select-bar" id="selectBar" hidden>
+      <span id="selCount">0 selected</span>
+      <div class="grow"></div>
+      <button class="btn" id="selAsk"></button>
+      <button class="btn primary" id="selAdd"></button>
+      <button class="icon" id="selDone" title="Leave select mode"></button>
+    </div>
+  </div>
+
+  <footer class="dock">
+    <div class="composer" id="composer">
+      <div class="ctx" id="ctxPills"></div>
+      <textarea id="input" rows="1" placeholder="Ask your saves. Type @ to add context, / for skills" aria-label="Ask Magpie"></textarea>
+      <div class="composer-row">
+        <button class="toggle" id="webToggle" aria-pressed="true" title="Search the web for links and fresh facts"></button>
+        <button class="toggle" id="mediaToggle" aria-pressed="true" title="Let Gemini look at the images and video of the most relevant saves"></button>
+        <div class="grow"></div>
+        <button class="send" id="sendBtn" aria-label="Send"></button>
+      </div>
+    </div>
+    <nav class="spaces" id="spaces" aria-label="Spaces"></nav>
+  </footer>
+
+  <div class="pop" id="pop" hidden role="listbox"></div>
+  <div class="peek" id="peek" hidden></div>
+  <div class="palette" id="palette" hidden>
+    <div class="palette-scrim" data-close></div>
+    <div class="palette-card" role="dialog" aria-label="Command bar">
+      <div class="palette-input"><span class="pi-ico"></span><input id="paletteInput" placeholder="Search saves, ask, or run a command" autocomplete="off" spellcheck="false"></div>
+      <div class="palette-list" id="paletteList" role="listbox"></div>
+    </div>
+  </div>
+  <div class="settings" id="settings" hidden></div>
+  <div class="onboard" id="onboard" hidden></div>
+  <div class="toasts" id="toasts"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
