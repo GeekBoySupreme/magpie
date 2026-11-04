@@ -15,7 +15,7 @@
     <button class="icon" id="settingsBtn" aria-label="Settings"></button>
   </header>
 
-  <div class="crawl-strip" id="crawlStrip" hidden></div>
+  <div class="crawl-wrap" id="crawlWrap"><div class="crawl-strip" id="crawlStrip"></div></div>
 
   <div class="main">
     <main id="stage" class="stage">
@@ -56,7 +56,8 @@
 
   <footer class="dock">
     <div class="composer" id="composer">
-      <div class="ctx" id="ctxPills"></div>
+      <span class="composer-glow" aria-hidden="true"></span>
+      <div class="ctx-wrap"><div class="ctx" id="ctxPills"></div></div>
       <textarea id="input" rows="1" placeholder="Ask your saves. Type @ to add context, / for skills" aria-label="Ask Magpie"></textarea>
       <div class="composer-row">
         <button class="toggle" id="webToggle" aria-pressed="true" title="Search the web for links and fresh facts"></button>

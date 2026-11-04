@@ -231,7 +231,7 @@ function cardFoot(it) {
 }
 
 function cardHTML(it, isNew) {
-  const cls = `card ${it.platform === 'x' ? 'tw' : 'tile'}${isNew ? ' is-new' : ''}${S.selected.has(it.id) ? ' is-sel' : ''}${it.status === 'indexing' ? ' is-indexing' : ''}`;
+  const cls = `card ${it.platform === 'x' ? 'tw' : 'tile'}${isNew ? ' is-new' : ''}${S.selected.has(it.id) ? ' is-sel' : ''}${it.status === 'indexing' ? ' is-indexing' : ''}${it.status === 'indexed' ? ' is-indexed' : ''}`;
   const check = `<span class="check" data-act="check" aria-hidden="true">${ICON.check}</span>`;
   const open = `<article class="${cls}" data-id="${esc(it.id)}" draggable="true" tabindex="0" aria-label="${esc(itemTitle(it))}">${check}`;
   if (it.platform === 'x') {
@@ -593,10 +593,10 @@ function newThread() {
 }
 
 const SUGGESTIONS = [
-  'Plan 5 days across Bangkok and Phuket from my saves. Mid-range budget, lots of street food.',
-  'Which restaurants and cafes have I saved, by city?',
-  'Summarize what I saved this week',
-  'Make a shopping list from the products in my saves',
+  { icon: 'plan', text: 'Plan 5 days across Bangkok and Phuket from my saves. Mid-range budget, lots of street food.' },
+  { icon: 'place', text: 'Which restaurants and cafes have I saved, by city?' },
+  { icon: 'spark', text: 'Summarize what I saved this week' },
+  { icon: 'basket', text: 'Make a shopping list from the products in my saves' },
 ];
 
 function renderThread() {
@@ -607,7 +607,7 @@ function renderThread() {
       <div class="ask-mark">${ICON.mark}</div>
       <h2>Ask your saves</h2>
       <p>Answers draw on the text, images and video of everything you've saved, and on the web when it helps.</p>
-      <div class="suggest">${SUGGESTIONS.map(s => `<button class="sug" data-sug="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+      <div class="suggest"><div class="suggest-label">Try</div>${SUGGESTIONS.map(s => `<button class="sug" data-sug="${esc(s.text)}"><span class="sug-ico">${ICON[s.icon]}</span><span class="sug-text">${esc(s.text)}</span><span class="sug-go">${ICON.arrow}</span></button>`).join('')}</div>
     </div>`;
     return;
   }
@@ -671,7 +671,7 @@ async function resolveContext(mentions) {
 function setBusy(on) {
   S.busy = on;
   $('#sendBtn').classList.toggle('busy', on);
-  $('#sendBtn').innerHTML = on ? ICON.stop : ICON.send;
+  $('#composer').classList.toggle('busy', on);
   $('#sendBtn').setAttribute('aria-label', on ? 'Stop' : 'Send');
 }
 
@@ -792,10 +792,17 @@ async function showThreadMenu() {
 // ---------------------------------------------------------------------------
 // Composer: @ mentions (tabs, spaces, saves, basket) and / skills
 // ---------------------------------------------------------------------------
+// Measure at auto height, then animate from the old height to the new one.
 function autosize() {
   const t = $('#input');
+  const from = t.style.height;
+  t.style.transition = 'none';
   t.style.height = 'auto';
-  t.style.height = Math.min(160, t.scrollHeight) + 'px';
+  const to = Math.min(160, t.scrollHeight) + 'px';
+  t.style.height = from || to;
+  void t.offsetHeight;
+  t.style.transition = '';
+  t.style.height = to;
 }
 function pillIcon(m) {
   return { item: ICON.image, items: ICON.select, space: m.platform === 'x' ? ICON.x : ICON.ig, basket: ICON.basket, tab: ICON.tab, tabs: ICON.tab }[m.kind] || ICON.spark;
@@ -806,7 +813,7 @@ function renderCtx() {
   if (S.skill) pills.push(`<span class="pill skill">${ICON.spark}<span>${esc(S.skill.name)}</span><button data-rm="skill" aria-label="Remove skill">${ICON.close}</button></span>`);
   S.mentions.forEach((m, i) => pills.push(`<span class="pill" data-k="${m.kind}">${pillIcon(m)}<span>${esc(clip(m.label, 30))}</span><button data-rm="${i}" aria-label="Remove">${ICON.close}</button></span>`));
   el.innerHTML = pills.join('');
-  el.hidden = !pills.length;
+  $('#composer').classList.toggle('has-ctx', pills.length > 0);
 }
 
 async function popEntries(trigger, q) {
@@ -861,7 +868,7 @@ function renderPop() {
   pop.innerHTML = groups.map(([label, list]) => `<div class="pop-group"><div class="pop-label">${label}</div>${list.map(e => {
     const i = entries.indexOf(e);
     n++;
-    return `<button class="pop-row ${i === S.popSel ? 'on' : ''}" data-pi="${i}" role="option" aria-selected="${i === S.popSel}">${e.icon}<span class="pr-main"><b>${esc(clip(e.label, 52))}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span></button>`;
+    return `<button class="pop-row ${i === S.popSel ? 'on' : ''}" data-pi="${i}" role="option" aria-selected="${i === S.popSel}"><span class="pr-ico">${e.icon}</span><span class="pr-main"><b>${esc(clip(e.label, 52))}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span>${i === S.popSel ? '<kbd class="pr-key">↵</kbd>' : ''}</button>`;
   }).join('')}</div>`).join('');
   const r = $('#composer').getBoundingClientRect();
   pop.style.bottom = (innerHeight - r.top + 8) + 'px';
@@ -1009,17 +1016,34 @@ async function addActiveTab() {
 
 function renderCrawl() {
   const c = S.crawl;
+  const wrap = $('#crawlWrap');
   const strip = $('#crawlStrip');
-  if (!c || c.state === 'idle') { strip.hidden = true; return; }
+  const show = !!c && c.state !== 'idle';
+  wrap.classList.toggle('show', show);
+  if (!show) return;
   const running = c.state === 'running' || c.state === 'paused';
-  strip.hidden = false;
+  if (!strip.firstChild) {
+    strip.innerHTML = `
+      <span class="chomp" aria-hidden="true"><i></i><i></i></span>
+      <span class="cs-text"><b></b><small></small></span>
+      <div class="grow"></div>
+      <span class="cs-ctl">
+        <button class="icon sm" data-cs="pause"><span class="ic ic-a">${ICON.pause}</span><span class="ic ic-b">${ICON.play}</span></button>
+        <button class="icon sm" data-cs="stop" title="Stop">${ICON.stop}</button>
+      </span>
+      <button class="icon sm cs-dismiss" data-cs="dismiss" title="Dismiss">${ICON.close}</button>`;
+  }
   strip.dataset.p = c.platform;
   strip.dataset.state = c.state;
-  strip.innerHTML = `
-    <span class="chomp ${c.state === 'running' ? 'on' : ''}" aria-hidden="true"><i></i><i></i></span>
-    <span class="cs-text"><b>${running ? (c.state === 'paused' ? 'Paused' : 'Crawling') + ' ' + platformName(c.platform) : c.state === 'done' ? 'Crawl finished' : 'Crawl stopped'}</b><small>${c.count} collected, ${c.fresh} new</small></span>
-    <div class="grow"></div>
-    ${running ? `<button class="icon sm" data-cs="pause" title="${c.state === 'paused' ? 'Resume' : 'Pause'}">${c.state === 'paused' ? ICON.play : ICON.pause}</button><button class="icon sm" data-cs="stop" title="Stop">${ICON.stop}</button>` : `<button class="icon sm" data-cs="dismiss" title="Dismiss">${ICON.close}</button>`}`;
+  strip.dataset.waiting = c.waiting && c.state === 'running' ? '1' : '0';
+  strip.querySelector('.chomp').classList.toggle('on', c.state === 'running');
+  const name = platformName(c.platform);
+  const title = c.state === 'paused' ? `Paused on ${name}` : c.state === 'running' ? (c.waiting ? `Loading more from ${name}` : `Crawling ${name}`) : c.state === 'done' ? 'Crawl finished' : 'Crawl stopped';
+  const b = strip.querySelector('.cs-text b');
+  if (b.textContent !== title) { b.textContent = title; if (!reduced) b.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: SPRING }); }
+  strip.querySelector('.cs-text small').textContent = `${c.count} collected, ${c.fresh} new`;
+  strip.querySelector('[data-cs="pause"]').title = c.state === 'paused' ? 'Resume' : 'Pause';
+  strip.classList.toggle('live', running);
 }
 
 // ---------------------------------------------------------------------------
@@ -1096,6 +1120,14 @@ async function openSettings() {
           <h3>Appearance</h3>
           <div class="seg-ctl" role="radiogroup">${['system', 'light', 'dark'].map(t => `<button role="radio" aria-checked="${s.theme === t}" data-theme-set="${t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>
         </section>
+        <section class="danger-zone">
+          <h3>Clear and reset</h3>
+          <div class="reset-list">
+            <div class="reset-row"><span class="rr-ico">${ICON.spark}</span><span class="rr-text"><b>Clear AI index</b><small>Keeps your saves and media. They're re-indexed if auto-indexing is on.</small></span><button class="btn sm" data-reset="index">Clear</button></div>
+            <div class="reset-row"><span class="rr-ico">${ICON.trash}</span><span class="rr-text"><b>Delete all saves</b><small>Removes every bookmark, its media and index, and the basket. Plans and chats stay.</small></span><button class="btn sm" data-reset="saves">Delete</button></div>
+            <div class="reset-row"><span class="rr-ico">${ICON.reset}</span><span class="rr-text"><b>Reset Magpie</b><small>Deletes everything, including plans, chats, API keys and settings.</small></span><button class="btn sm" data-reset="all">Reset</button></div>
+          </div>
+        </section>
       </div>
     </aside>`;
   el.hidden = false;
@@ -1136,6 +1168,8 @@ async function onSettingsClick(e) {
   if (t) { S.settings = await setSettings({ theme: t.dataset.themeSet }); applyTheme(); $$('#settings [data-theme-set]').forEach(b => b.setAttribute('aria-checked', b === t)); return; }
   const rm = e.target.closest('[data-rmskill]');
   if (rm) { const sk = [...(S.settings.skills || [])]; sk.splice(+rm.dataset.rmskill, 1); S.settings = await setSettings({ skills: sk }); openSettings(); return; }
+  const rs = e.target.closest('[data-reset]');
+  if (rs) { confirmReset(rs); return; }
   const d = e.target.closest('[data-do]');
   if (!d) return;
   switch (d.dataset.do) {
@@ -1154,6 +1188,31 @@ async function onSettingsClick(e) {
       break;
     }
   }
+}
+
+// Two-step confirm: first click arms the button, second click within 4s runs it.
+const RESET_DONE = { index: 'AI index cleared', saves: 'All saves deleted', all: 'Magpie was reset' };
+async function confirmReset(btn) {
+  const scope = btn.dataset.reset;
+  if (btn.dataset.armed !== '1') {
+    btn.dataset.armed = '1';
+    btn.dataset.label = btn.textContent;
+    btn.textContent = 'Confirm';
+    btn.classList.add('armed');
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { btn.dataset.armed = ''; btn.textContent = btn.dataset.label; btn.classList.remove('armed'); }, 4000);
+    return;
+  }
+  clearTimeout(btn._t);
+  btn.disabled = true; btn.textContent = 'Working…';
+  const r = await chrome.runtime.sendMessage({ type: 'data:reset', scope }).catch(e => ({ error: String(e) }));
+  if (r?.error) { toast(`Couldn't reset: ${r.error}`); btn.disabled = false; btn.textContent = btn.dataset.label; return; }
+  if (scope === 'all') { location.reload(); return; }
+  if (scope === 'saves') { S.basket = []; S.selected.clear(); updateNav(); }
+  await loadItems();
+  renderSpace();
+  closeSettings();
+  toast(RESET_DONE[scope]);
 }
 
 async function exportVault(withThumbs) {
@@ -1260,7 +1319,7 @@ function wireStatic() {
   $('#selDone').innerHTML = ICON.close;
   $('#webToggle').innerHTML = `${ICON.web}<span>Web</span>`;
   $('#mediaToggle').innerHTML = `${ICON.image}<span>Media</span>`;
-  $('#sendBtn').innerHTML = ICON.send;
+  $('#sendBtn').innerHTML = `<span class="ic ic-a">${ICON.send}</span><span class="ic ic-b">${ICON.stop}</span>`;
   $('.pi-ico').innerHTML = ICON.search;
   syncToggles();
 }

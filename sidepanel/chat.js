@@ -6,7 +6,7 @@ import { blobs } from '../lib/db.js';
 import { itemTitle } from './shared.js';
 
 export const BUILTIN_SKILLS = [
-  { cmd: 'plan', name: 'Plan a trip', prompt: 'Build a detailed day-by-day itinerary. Group stops by neighborhood to minimize transit, give realistic timings, transport between stops, typical costs, and reservation tips. Pull every relevant place, food and tip from the saves, and fill gaps from the web. End with a "Get ready" task list with booking links.' },
+  { cmd: 'plan', name: 'Plan a trip', prompt: 'Build a detailed day-by-day itinerary. Open with a short summary and a > [!TIP] callout with the single best insider tip. Then one "### Day N: Theme" section per day, grouping stops by neighborhood to minimize transit. Inside each day, use timeline bullets that start with a bold time ("- **09:00** …") giving the stop in bold, why it is worth it, the cost, and how to get to the next stop. Pull every relevant place, food and tip from the saves, and fill gaps from the web. Add a "### Budget" table (item, per person, notes) and a > [!WARNING] callout for closures, seasonality or booking deadlines. End with a "### Get ready" task list with booking links.' },
   { cmd: 'summarize', name: 'Summarize', prompt: 'Summarize the referenced saves into the key takeaways, grouped by theme, citing each save.' },
   { cmd: 'compare', name: 'Compare', prompt: 'Compare the options found in the saves in a Markdown table (price, location, highlights, drawbacks), then give a clear recommendation.' },
   { cmd: 'links', name: 'Collect links', prompt: 'Collect every actionable link needed: official sites, booking and reservation pages, tickets, maps, and shops. Group them and present each as a task list item.' },
@@ -63,7 +63,16 @@ How to answer:
 - Use the WEB RESULTS and Google Search to fill gaps, check facts that change (hours, prices, seasons, closures), and find official or booking links. Only use URLs that appear in the provided context or in search grounding. Never make up a URL.
 - If the user states preferences (budget, pace, diet, dates, who's travelling, style), follow them and say briefly how the answer reflects them.
 - Be specific: names, neighborhoods, timings, prices with currency, how to get between places.
-- Format in clean Markdown: a one or two sentence intro, then sections with ### headings. For itineraries use "### Day N: theme" with Morning, Afternoon and Evening bullet points. For plans, end with a "### Get ready" section as a task list ("- [ ] Book … [site](url)") covering bookings, tickets, transport, documents and packing.
+- Your answer is rendered as rich text in a narrow browser sidebar. Make it scannable and well structured, using this Markdown:
+  - Open with a one or two sentence summary. No title line, no H1 or H2.
+  - Use ### headings for sections. Use **bold** for the names of places, dishes, products and key numbers.
+  - Prefer short bullet points to long paragraphs. Keep paragraphs to two or three sentences.
+  - Itineraries and schedules: one "### Day N: Theme" section per day (exactly that pattern). Inside, timeline bullets that start with a bold time or part of day, then the detail: "- **09:00** Coffee at **Café Name** in Alfama [[item:ID]]. €4. Walk 8 min to the next stop." or "- **Evening** …".
+  - Compare options, prices and budgets in a Markdown table with 3 to 5 short columns.
+  - Callouts for asides, as a blockquote whose first line is the marker and an optional short title: "> [!TIP] Go early" then the text on the next "> " line. Markers: [!TIP] insider tips, [!NOTE] useful context, [!WARNING] closures, seasonality, scams or booking deadlines, [!BUDGET] cost summaries. Use at most three per answer.
+  - ==Highlight== at most one or two must-not-miss facts.
+  - Plans end with a "### Get ready" section as a task list ("- [ ] Book … [site](url)") covering bookings, tickets, transport, documents and packing.
+  - No emoji, no HTML, no horizontal rules between every section.
 - If the saves don't cover something, say so in a sentence and fill it from the web.
 Today's date is ${new Date().toDateString()}.${skill ? `\n\nActive skill, "${skill.name}": ${skill.prompt}` : ''}`;
 }

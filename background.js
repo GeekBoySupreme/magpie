@@ -1,9 +1,18 @@
-import { items, blobs, kv } from './lib/db.js';
+import { items, blobs, kv, threads, plans } from './lib/db.js';
 import * as G from './lib/gemini.js';
 import { getSettings, blobToBase64, docText, hashStr } from './lib/util.js';
 import { runGuard, snapshotIndex } from './lib/storage-guard.js';
 
 const broadcast = msg => chrome.runtime.sendMessage(msg).catch(() => {});
+// Content scripts on X and Instagram keep their in-page save buttons in sync.
+const SITE_TABS = ['https://x.com/*', 'https://twitter.com/*', 'https://www.instagram.com/*'];
+async function tellTabs(msg) {
+  try {
+    for (const t of await chrome.tabs.query({ url: SITE_TABS })) chrome.tabs.sendMessage(t.id, msg).catch(() => {});
+  } catch {}
+}
+// Bumped by a reset so work already in flight doesn't write stale results back.
+let resetGen = 0;
 
 // ---------- lifecycle ----------
 function setup() {
@@ -21,7 +30,34 @@ chrome.storage.onChanged.addListener(c => { if (c.settings) { paused = false; la
 // ---------- messages ----------
 const H = {
   async ingest({ item }) { return upsert(item); },
-  async has({ ids = [] }) { const got = await items.getMany(ids); return { saved: got.filter(Boolean).map(i => i.id) }; },
+  async has({ ids = [] }) {
+    const got = (await items.getMany(ids)).filter(Boolean);
+    return { saved: got.map(i => i.id), indexed: got.filter(i => i.status === 'indexed').map(i => i.id) };
+  },
+  // scope: 'index' (forget AI results, keep saves), 'saves' (delete every save and its media), 'all' (factory reset)
+  async 'data:reset'({ scope }) {
+    resetGen++;
+    if (scope === 'index') {
+      for (const it of await items.all()) {
+        await items.put({ ...it, ai: null, embedding: null, indexedAt: null, error: null, attempts: 0, nextTry: 0, noMedia: false,
+          status: it.archived ? it.status : it.media?.some(m => !m.thumbKey) ? 'new' : 'captured' });
+      }
+      await kv.put('sinceSnapshot', 0);
+    } else {
+      await Promise.all([items.clear(), blobs.clear(), kv.clear()]);
+      await chrome.storage.local.remove(['basket', 'pendingCrawl']);
+      if (scope === 'all') {
+        await Promise.all([threads.clear(), plans.clear()]);
+        await chrome.storage.local.clear();
+      }
+    }
+    paused = false; lastErr = null;
+    broadcast({ type: 'items:changed', ids: [], reset: scope });
+    tellTabs({ type: 'saved:reset', scope });
+    if (scope === 'index') pump();
+    else broadcast({ type: 'queue:status', ...(await queueStatus()) });
+    return { ok: true };
+  },
   async 'panel:open'(_, sender) {
     try { await chrome.sidePanel.open({ tabId: sender.tab.id }); return { ok: true }; }
     catch { return { ok: false }; }
@@ -266,6 +302,7 @@ function cleanAI(ai = {}) {
 }
 
 async function indexItem(it, s) {
+  const gen = resetGen;
   await items.patch(it.id, { status: 'indexing', indexStarted: Date.now() });
   broadcast({ type: 'items:changed', ids: [it.id] });
   const media = [...(it.media || [])];
@@ -316,9 +353,12 @@ async function indexItem(it, s) {
     let embedding = null;
     try { [embedding] = await G.embed(s.geminiKey, s.embedModel, [docText({ ...it, ai })], 'RETRIEVAL_DOCUMENT'); }
     catch (e) { console.warn('[magpie] embed failed', e?.message); }
+    if (gen !== resetGen) return;
     await items.patch(it.id, x => ({ ...x, media, ai, embedding, status: 'indexed', indexedAt: Date.now(), error: null, attempts: 0 }));
     await kv.put('sinceSnapshot', ((await kv.get('sinceSnapshot')) || 0) + 1);
+    tellTabs({ type: 'item:indexed', id: it.id });
   } catch (e) {
+    if (gen !== resetGen) return;
     const err = e instanceof G.GeminiError ? e : null;
     const attempts = (it.attempts || 0) + 1;
     const msg = String(e?.message || e).slice(0, 300);

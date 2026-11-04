@@ -1,4 +1,4 @@
-import { esc, host } from './shared.js';
+import { esc, host, ICON } from './shared.js';
 import { hashStr } from '../lib/util.js';
 
 function shorten(u) {
@@ -18,13 +18,21 @@ function inline(s) {
   t = t.replace(/(^|[\s(])(https?:\/\/[^\s<)"]+)/g, (_, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener noreferrer">${esc(shorten(u.replace(/&amp;/g, '&')))}</a>`);
   t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^\w*])\*([^*\n]+)\*(?!\w)/g, '$1<em>$2</em>')
-    .replace(/~~([^~]+)~~/g, '<del>$1</del>');
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>');
   return t.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[+i]}</code>`);
 }
 
+// "**09:00** Coffee at …" or "**Morning:** …" renders as a timeline row.
+const WHEN_RE = /^\*\*((?:\d{1,2}[:.]\d{2}(?:\s?[AaPp]\.?[Mm]\.?)?(?:\s?[–-]\s?\d{1,2}[:.]\d{2})?)|Morning|Late morning|Midday|Noon|Afternoon|Evening|Night|Late night|Breakfast|Brunch|Lunch|Dinner|Sunset)\s*:?\*\*\s*[–—:-]?\s*(.+)$/i;
+
 function liHTML(text, checks) {
   const m = text.match(/^\[( |x|X)\]\s+(.*)$/);
-  if (!m) return `<li>${inline(text)}</li>`;
+  if (!m) {
+    const w = text.match(WHEN_RE);
+    if (w) return `<li class="timed"><span class="when">${esc(w[1])}</span><span>${inline(w[2])}</span></li>`;
+    return `<li>${inline(text)}</li>`;
+  }
   const key = hashStr(m[2]);
   const on = key in checks ? checks[key] : m[1].toLowerCase() === 'x';
   return `<li class="task"><label><input type="checkbox" data-task="${key}" ${on ? 'checked' : ''}><span>${inline(m[2])}</span></label></li>`;
@@ -61,11 +69,24 @@ export function renderMarkdown(src, { checks = {} } = {}) {
       continue;
     }
     const h = l.match(/^(#{1,6})\s+(.*)$/);
-    if (h) { const n = Math.min(4, h[1].length + 1); out.push(`<h${n}>${inline(h[2])}</h${n}>`); i++; continue; }
+    if (h) {
+      const n = Math.min(4, h[1].length + 1);
+      const day = h[2].match(/^(Day\s+\d+)\s*[:—–-]?\s*(.*)$/i);
+      out.push(day ? `<h${n} class="day"><span class="day-n">${esc(day[1])}</span><span>${inline(day[2])}</span></h${n}>` : `<h${n}>${inline(h[2])}</h${n}>`);
+      i++; continue;
+    }
     if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)) { out.push('<hr>'); i++; continue; }
     if (/^\s*>/.test(l)) {
       const buf = [];
       while (i < L.length && /^\s*>/.test(L[i])) buf.push(L[i++].replace(/^\s*>\s?/, ''));
+      const co = (buf[0] || '').match(/^\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION|BUDGET)\]\s*(.*)$/i);
+      if (co) {
+        const kind = co[1].toLowerCase();
+        const title = co[2] || { note: 'Note', tip: 'Tip', warning: 'Heads up', important: 'Important', caution: 'Careful', budget: 'Budget' }[kind];
+        const icon = { note: ICON.note, tip: ICON.bulb, warning: ICON.warn, caution: ICON.warn, important: ICON.spark, budget: ICON.wallet }[kind];
+        out.push(`<div class="callout ${kind}"><span class="callout-ico">${icon}</span><div class="callout-body"><b class="callout-title">${inline(title)}</b>${renderMarkdown(buf.slice(1).join('\n'), { checks })}</div></div>`);
+        continue;
+      }
       out.push(`<blockquote>${renderMarkdown(buf.join('\n'), { checks })}</blockquote>`);
       continue;
     }
