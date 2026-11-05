@@ -35,6 +35,7 @@
     pause: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.6" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.6" fill="currentColor"/></svg>',
     play: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8.6 5.2c-.7-.4-1.6.1-1.6.9v11.8c0 .8.9 1.3 1.6.9l9.9-5.9c.7-.4.7-1.4 0-1.8z" fill="currentColor"/></svg>',
     stop: '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3" fill="currentColor"/></svg>',
+    restart: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.4-5.5"/><path d="M19.5 4v4.5H15"/></svg>',
   };
 
   // ---------- toast ----------
@@ -179,6 +180,7 @@
       </span>
       <span class="mgp-dock-ctl" data-on="0">
         <button type="button" class="mgp-dock-icon" data-act="pause" title="Pause"><span class="mgp-ic mgp-ic-pause">${M.icon.pause}</span><span class="mgp-ic mgp-ic-play">${M.icon.play}</span></button>
+        <button type="button" class="mgp-dock-icon" data-act="restart" title="Restart: reload the list and keep going">${M.icon.restart}</button>
         <button type="button" class="mgp-dock-icon" data-act="stop" title="Stop">${M.icon.stop}</button>
       </span>
       <span class="mgp-dock-sep" aria-hidden="true"></span>
@@ -203,13 +205,15 @@
       set(state, { count = 0, fresh = 0, waiting = false } = {}) {
         el.dataset.state = state;
         el.dataset.waiting = waiting && state === 'running' ? '1' : '0';
-        const running = state === 'running' || state === 'paused';
+        const running = state === 'running' || state === 'paused' || state === 'restarting';
         $('.mgp-dock-stats').dataset.on = running || count ? '1' : '0';
         $('.mgp-dock-ctl').dataset.on = running ? '1' : '0';
+        $('.mgp-dock-main').title = state === 'timeout' ? 'Loading timed out. Restart the crawl where it stopped' : '';
         $('[data-act=pause]').title = state === 'paused' ? 'Resume' : 'Pause';
         swap($('.mgp-dock-label'),
           state === 'running' ? (waiting ? 'Loading more' : 'Crawling') : state === 'paused' ? 'Paused' :
-          state === 'done' ? 'All caught up' : state === 'stopped' ? 'Crawl again' : label);
+          state === 'done' ? 'Crawl again' : state === 'stopped' ? 'Crawl again' :
+          state === 'timeout' ? 'Timed out · Restart' : state === 'restarting' ? 'Restarting' : label);
         const n = $('.mgp-n');
         if (count !== lastN) { n.textContent = count; n.classList.remove('mgp-tick'); void n.offsetWidth; n.classList.add('mgp-tick'); lastN = count; }
         const nw = $('.mgp-new');
@@ -230,6 +234,12 @@
     }
     return false;
   };
+  // "Something went wrong. Try reloading." with a Retry button (X), or
+  // Instagram's "Couldn't load" / "Try again" states.
+  const RETRY_RE = /^(retry|try again|reload|reload page)$/i;
+  M.retryButton = () => [...document.querySelectorAll('main [role="button"], main button, [data-testid="primaryColumn"] [role="button"]')]
+    .find(b => RETRY_RE.test((b.innerText || b.textContent || '').trim()) && !b.closest('.mgp-dock') && b.getBoundingClientRect().height);
+  M.loadFailed = () => !!M.retryButton() || /couldn['’]t load|something went wrong/i.test(document.querySelector('main')?.innerText?.slice(-600) || '');
   const atBottom = () => innerHeight + scrollY >= document.documentElement.scrollHeight - 24;
 
   // ---------- sequential crawler ----------
@@ -251,26 +261,43 @@
     // Resolves 'more' when new posts appear, 'idle' after `quiet` ms with no
     // loader and nothing new, 'stopped' if the crawl ends. Paused time and
     // time spent loading don't count towards `quiet`.
+    // 'timeout' when the site shows an error, or its spinner never resolves.
+    const LOAD_TIMEOUT = 30000;
     async function waitForMore(quiet) {
-      let since = Date.now();
-      const giveUp = Date.now() + 60000;
+      let since = Date.now(), loadingSince = 0;
       while (st.running) {
-        if (st.paused) { await hold(); since = Date.now(); continue; }
+        if (st.paused) { await hold(); since = Date.now(); loadingSince = 0; continue; }
         if (unseen().length) { setWaiting(false); return 'more'; }
+        if (M.loadFailed()) return 'timeout';
         const loading = isLoading();
         setWaiting(true);
-        if (loading) since = Date.now();
-        if (Date.now() - since > quiet || Date.now() > giveUp) return 'idle';
+        if (loading) { since = Date.now(); loadingSince ||= Date.now(); if (Date.now() - loadingSince > LOAD_TIMEOUT) return 'timeout'; }
+        else loadingSince = 0;
+        if (Date.now() - since > quiet) return 'idle';
         await M.sleep(220);
       }
       return 'stopped';
     }
 
-    async function run() {
+    // Nudge the page so it fetches again: press the site's Retry if shown,
+    // then scroll up a little and back down to re-trigger the loader.
+    async function recover() {
+      const rb = M.retryButton();
+      if (rb) { rb.click(); await M.sleep(1200); }
+      window.scrollBy({ top: -innerHeight * 0.6 });
+      await M.sleep(500);
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      await M.sleep(600);
+    }
+
+    let loop = null;
+    let endState = 'done';
+    async function run({ resume = false } = {}) {
       if (st.running) return;
       Object.assign(st, { running: true, paused: false, waiting: false });
+      endState = 'done';
       progress('running');
-      M.nudgeKey();
+      if (resume) await recover(); else M.nudgeKey();
       let misses = 0;
       while (st.running) {
         await hold();
@@ -308,20 +335,27 @@
         const stuck = Math.abs(scrollY - y0) < 4;
         const r = await waitForMore(atBottom() || stuck ? 2600 + misses * 1600 : 1200);
         if (r === 'stopped') break;
+        if (r === 'timeout') { endState = 'timeout'; break; }
         if (r === 'more') { misses = 0; continue; }
         if (atBottom() || stuck) { misses++; if (misses >= 3) break; }
       }
       st.waiting = false;
       const stopped = !st.running;
-      if (!stopped && finish) {
+      if (!stopped && endState === 'done' && finish) {
         try { await finish(st); } catch (err) { console.debug('[magpie]', err); }
       }
       st.running = false; st.paused = false;
-      progress(stopped ? 'stopped' : 'done');
+      progress(stopped ? 'stopped' : endState);
     }
+    const start = opts => (loop = run(opts));
     return {
       st,
-      start: run,
+      start,
+      // Restart keeps what was already collected and picks up where it left off.
+      async restart() {
+        if (st.running) { st.running = false; st.paused = false; dock.set('restarting', st); await loop; }
+        return start({ resume: true });
+      },
       stop() { st.running = false; st.paused = false; },
       pause() { if (!st.running) return; st.paused = !st.paused; progress(st.paused ? 'paused' : 'running'); },
     };
@@ -336,7 +370,8 @@
       crawler = M.crawler({ platform, dock, collect, process, finish, isLoading });
       dock.set('idle');
       dock.onAction(act => {
-        if (act === 'start') crawler.st.running ? crawler.pause() : crawler.start();
+        if (act === 'start') crawler.st.running ? crawler.pause() : crawler.st.seen.size ? crawler.restart() : crawler.start();
+        if (act === 'restart') crawler.restart();
         if (act === 'pause') crawler.pause();
         if (act === 'stop') crawler.stop();
         if (act === 'panel') M.send('panel:open');
@@ -357,6 +392,7 @@
       if (msg.type === 'crawl:start') crawler.start();
       if (msg.type === 'crawl:stop') crawler.stop();
       if (msg.type === 'crawl:pause') crawler.pause();
+      if (msg.type === 'crawl:restart') crawler.restart();
       reply({ ok: true });
     });
   };

@@ -1021,7 +1021,7 @@ function renderCrawl() {
   const show = !!c && c.state !== 'idle';
   wrap.classList.toggle('show', show);
   if (!show) return;
-  const running = c.state === 'running' || c.state === 'paused';
+  const running = c.state === 'running' || c.state === 'paused' || c.state === 'restarting';
   if (!strip.firstChild) {
     strip.innerHTML = `
       <span class="chomp" aria-hidden="true"><i></i><i></i></span>
@@ -1031,6 +1031,7 @@ function renderCrawl() {
         <button class="icon sm" data-cs="pause"><span class="ic ic-a">${ICON.pause}</span><span class="ic ic-b">${ICON.play}</span></button>
         <button class="icon sm" data-cs="stop" title="Stop">${ICON.stop}</button>
       </span>
+      <button class="cs-restart" data-cs="restart" title="Restart the crawl where it left off">${ICON.refresh}<span>Restart</span></button>
       <button class="icon sm cs-dismiss" data-cs="dismiss" title="Dismiss">${ICON.close}</button>`;
   }
   strip.dataset.p = c.platform;
@@ -1038,10 +1039,11 @@ function renderCrawl() {
   strip.dataset.waiting = c.waiting && c.state === 'running' ? '1' : '0';
   strip.querySelector('.chomp').classList.toggle('on', c.state === 'running');
   const name = platformName(c.platform);
-  const title = c.state === 'paused' ? `Paused on ${name}` : c.state === 'running' ? (c.waiting ? `Loading more from ${name}` : `Crawling ${name}`) : c.state === 'done' ? 'Crawl finished' : 'Crawl stopped';
+  const title = c.state === 'paused' ? `Paused on ${name}` : c.state === 'running' ? (c.waiting ? `Loading more from ${name}` : `Crawling ${name}`)
+    : c.state === 'restarting' ? `Restarting ${name}` : c.state === 'timeout' ? `${name} stopped loading` : c.state === 'done' ? 'Crawl finished' : 'Crawl stopped';
   const b = strip.querySelector('.cs-text b');
   if (b.textContent !== title) { b.textContent = title; if (!reduced) b.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: SPRING }); }
-  strip.querySelector('.cs-text small').textContent = `${c.count} collected, ${c.fresh} new`;
+  strip.querySelector('.cs-text small').textContent = c.state === 'timeout' ? `${c.count} collected so far` : `${c.count} collected, ${c.fresh} new`;
   strip.querySelector('[data-cs="pause"]').title = c.state === 'paused' ? 'Resume' : 'Pause';
   strip.classList.toggle('live', running);
 }
@@ -1479,7 +1481,10 @@ function wire() {
     const b = e.target.closest('[data-cs]');
     if (!b || !S.crawl) return;
     if (b.dataset.cs === 'dismiss') { S.crawl = null; renderCrawl(); return; }
-    try { await chrome.tabs.sendMessage(S.crawl.tabId, { type: `crawl:${b.dataset.cs}` }); } catch {}
+    let r = null;
+    try { r = await chrome.tabs.sendMessage(S.crawl.tabId, { type: `crawl:${b.dataset.cs}` }); } catch {}
+    // The tab was closed or navigated away: reopen the saved list and crawl again.
+    if (b.dataset.cs === 'restart' && !r?.ok) openAndCrawl(S.crawl.platform);
   });
 
   // Global keys
