@@ -1,82 +1,128 @@
 /* Magpie in-page UI. Every selector is prefixed to stay out of the site's way. */
+
 .mgp-dock, .mgp-save, .mgp-toasts {
   --mgp-c1: #7c6cff;
   --mgp-c2: #e06bff;
+  --mgp-blue: #1d8cf8;
+  --mgp-blurple: #5865f2;
+  --mgp-pink: #ff2d95;
   --mgp-spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
-  --mgp-font: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --mgp-snap: cubic-bezier(.2, 0, 0, 1);
+  --mgp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
 }
-.mgp-dock.mgp-x { --mgp-c1: #1d9bf0; --mgp-c2: #1d9bf0; }
-.mgp-dock.mgp-instagram { --mgp-c1: #ff3d7f; --mgp-c2: #ffb03a; }
+.mgp-dock.mgp-x { --mgp-c1: #1d9bf0; }
+.mgp-dock.mgp-instagram { --mgp-c1: #e1306c; }
 
 /* ---------- dock ---------- */
 .mgp-dock {
   all: initial;
-  position: fixed; z-index: 2147483600; left: 50%; bottom: 22px;
-  display: flex; align-items: center; gap: 4px; padding: 5px;
+  position: fixed; z-index: 2147483600; left: 50%; bottom: 24px;
+  display: flex; align-items: center; gap: 2px; height: 56px; padding: 0 7px; box-sizing: border-box;
   border-radius: 999px;
-  background: rgba(24, 20, 30, .84);
-  -webkit-backdrop-filter: blur(20px) saturate(1.7); backdrop-filter: blur(20px) saturate(1.7);
-  box-shadow: 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -14px rgba(0,0,0,.6), 0 0 0 0 var(--mgp-c1);
-  color: #f3eff8; font: 550 13px/1 var(--mgp-font); letter-spacing: -.005em;
+  background: rgba(22, 20, 28, .86);
+  -webkit-backdrop-filter: blur(22px) saturate(1.8); backdrop-filter: blur(22px) saturate(1.8);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.1), inset 0 1px 0 rgba(255,255,255,.09), 0 24px 56px -16px rgba(0,0,0,.65);
+  color: #f3f1f7; font: 550 14px/1 var(--mgp-font); letter-spacing: -.005em;
   transform: translate(-50%, 160%) scale(.86); opacity: 0;
-  transition: transform .7s var(--mgp-spring), opacity .3s ease, box-shadow .6s ease;
+  transition: transform .6s var(--mgp-spring), opacity .25s ease, box-shadow .4s ease;
 }
 .mgp-dock.mgp-in { transform: translate(-50%, 0) scale(1); opacity: 1; }
-.mgp-dock[data-state="running"] { box-shadow: 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -14px rgba(0,0,0,.6), 0 10px 40px -10px var(--mgp-c1); }
-.mgp-dock button { all: unset; cursor: pointer; box-sizing: border-box; }
-.mgp-dock button:focus-visible { outline: 2px solid var(--mgp-c2); outline-offset: 2px; }
-
-.mgp-dock-main {
-  display: inline-flex !important; align-items: center; gap: 10px;
-  height: 38px; padding: 0 16px 0 11px; border-radius: 999px;
-  color: #fff; font: 620 13px/1 var(--mgp-font) !important;
-  background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 60%), linear-gradient(120deg, var(--mgp-c1), var(--mgp-c2));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.22), 0 8px 20px -8px var(--mgp-c1);
-  transition: transform .4s var(--mgp-spring), filter .2s;
+.mgp-dock > * { flex: none; }
+/* Live ring while crawling: a solid platform-colour outline that breathes */
+.mgp-dock::before {
+  content: ""; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 0 2px var(--mgp-c1); opacity: 0; transition: opacity .3s ease;
 }
-.mgp-dock-main:hover { filter: brightness(1.08); }
-.mgp-dock-main:active { transform: scale(.96) translateY(1px); }
+.mgp-dock[data-state="running"]::before { opacity: 1; animation: mgp-breathe 1.6s ease-in-out infinite; }
+.mgp-dock[data-state="running"][data-waiting="1"]::before { animation-duration: .9s; }
+.mgp-dock[data-state="paused"]::before { opacity: .45; }
+.mgp-dock[data-state="timeout"]::before { opacity: 1; box-shadow: 0 0 0 2px #f5a524; }
+@keyframes mgp-breathe { 50% { opacity: .35; } }
+
+.mgp-dock button { all: unset; cursor: pointer; box-sizing: border-box; flex: none; }
+/* Class rules below are prefixed with .mgp-dock so they outrank the reset above. */
+.mgp-dock button:focus-visible { outline: 2px solid var(--mgp-c1); outline-offset: 2px; }
+
+.mgp-dock .mgp-dock-main {
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 42px; padding: 0 18px 0 13px; border-radius: 999px;
+  color: #fff; font: 620 14px/1 var(--mgp-font);
+  background: var(--mgp-c1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.18), 0 6px 16px -8px var(--mgp-c1);
+  transition: transform .4s var(--mgp-spring), filter .18s ease;
+}
+.mgp-dock .mgp-dock-main:hover { filter: brightness(1.08) saturate(1.05); transform: translateY(-1px); }
+.mgp-dock .mgp-dock-main:active { transform: scale(.94); }
+.mgp-dock[data-state="timeout"] .mgp-dock-main { background: #f5a524; color: #1f1400; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.15); }
+.mgp-dock[data-state="timeout"] .mgp-jaw, .mgp-dock[data-state="timeout"] .mgp-dots { background: #1f1400; }
+.mgp-dock[data-state="restarting"] [data-act="restart"] svg { animation: mgp-spin .8s linear infinite; }
+.mgp-dock-label { display: inline-block; line-height: 1; white-space: nowrap; }
+.mgp-swap { animation: mgp-swap .38s var(--mgp-spring); }
+@keyframes mgp-swap { from { transform: translateY(7px); opacity: 0; filter: blur(2px); } }
+.mgp-dock[data-waiting="1"] .mgp-dock-label::after {
+  content: "…"; display: inline-block; width: 1em; text-align: left; animation: mgp-ellipsis 1.2s steps(4) infinite;
+  overflow: hidden; vertical-align: bottom;
+}
+@keyframes mgp-ellipsis { from { width: 0; } to { width: 1em; } }
 
 .mgp-chomp { position: relative; display: inline-block; width: 20px; height: 20px; flex: none; }
 .mgp-jaw { position: absolute; left: 0; width: 20px; height: 10px; background: #fff; }
 .mgp-top { top: 0; border-radius: 10px 10px 0 0; transform-origin: 50% 100%; }
 .mgp-bot { bottom: 0; border-radius: 0 0 10px 10px; transform-origin: 50% 0; }
 .mgp-dots {
-  position: absolute; left: 14px; top: 8px; width: 0; height: 4px; overflow: hidden;
-  background: radial-gradient(circle, #fff 1.6px, transparent 2px) 0 50% / 8px 4px repeat-x;
-  transition: width .3s ease;
+  position: absolute; left: 15px; top: 8px; width: 4px; height: 4px; border-radius: 50%; background: #fff;
+  box-shadow: 8px 0 #fff, 16px 0 #fff; opacity: 0; transition: opacity .2s ease;
 }
 .mgp-dock[data-state="running"] .mgp-top { animation: mgp-jaw-top .3s ease-in-out infinite alternate; }
 .mgp-dock[data-state="running"] .mgp-bot { animation: mgp-jaw-bot .3s ease-in-out infinite alternate; }
-.mgp-dock[data-state="running"] .mgp-dots { width: 22px; animation: mgp-dots .6s linear infinite; }
+.mgp-dock[data-state="running"] .mgp-dots { opacity: 1; animation: mgp-dots .6s linear infinite; }
+.mgp-dock[data-waiting="1"] .mgp-top, .mgp-dock[data-waiting="1"] .mgp-bot { animation-duration: .7s; }
 @keyframes mgp-jaw-top { from { transform: rotate(0); } to { transform: rotate(-34deg); } }
 @keyframes mgp-jaw-bot { from { transform: rotate(0); } to { transform: rotate(34deg); } }
-@keyframes mgp-dots { from { background-position-x: 0; } to { background-position-x: -8px; } }
+@keyframes mgp-dots { from { transform: translateX(0); } to { transform: translateX(-8px); } }
 
-.mgp-dock-stats { display: inline-flex; align-items: baseline; gap: 5px; padding: 0 10px 0 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mgp-dock-stats[hidden] { display: none; }
-.mgp-n { font: 700 15px/1 var(--mgp-font); display: inline-block; }
-.mgp-n.mgp-tick { animation: mgp-tick .45s var(--mgp-spring); }
-@keyframes mgp-tick { from { transform: translateY(6px) scale(.8); opacity: .3; } }
-.mgp-sub { color: rgba(243,239,248,.6); font-weight: 500; }
-.mgp-new { margin-left: 4px; padding: 3px 7px; border-radius: 999px; background: rgba(255,255,255,.1); color: #fff; font: 600 11px/1 var(--mgp-font); }
-.mgp-new[hidden] { display: none; }
-
-.mgp-dock-icon {
-  display: inline-grid !important; place-items: center; width: 34px; height: 34px; border-radius: 50%;
-  color: rgba(243,239,248,.8); transition: background .2s, color .2s, transform .35s var(--mgp-spring);
+/* stats and controls collapse to zero width when idle, so the pill morphs */
+.mgp-dock-stats, .mgp-dock-ctl {
+  display: inline-flex; align-items: center; height: 42px; overflow: hidden; white-space: nowrap;
+  max-width: 0; opacity: 0; transform: scale(.8);
+  transition: max-width .45s var(--mgp-snap), opacity .22s ease, transform .45s var(--mgp-spring), padding .45s var(--mgp-snap);
 }
-.mgp-dock-icon[hidden] { display: none !important; }
-.mgp-dock-icon:hover { background: rgba(255,255,255,.1); color: #fff; }
-.mgp-dock-icon:active { transform: scale(.9); }
-.mgp-dock-panel .mgp-i-mark { width: 16px; height: 16px; }
+.mgp-dock-stats { gap: 6px; font-variant-numeric: tabular-nums; }
+.mgp-dock-stats[data-on="1"] { max-width: 200px; opacity: 1; transform: none; padding: 0 8px 0 10px; }
+.mgp-dock-ctl { gap: 2px; }
+.mgp-dock-ctl[data-on="1"] { max-width: 130px; opacity: 1; transform: none; }
+.mgp-n { display: inline-block; font: 700 16px/1 var(--mgp-font); }
+.mgp-n.mgp-tick { animation: mgp-tick .4s var(--mgp-spring); }
+@keyframes mgp-tick { from { transform: translateY(6px) scale(.8); opacity: .3; } }
+.mgp-sub { color: rgba(243,241,247,.6); font: 500 13px/1 var(--mgp-font); }
+.mgp-new {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; box-sizing: border-box;
+  background: rgba(255,255,255,.12); color: #fff; font: 600 11.5px/1 var(--mgp-font);
+  max-width: 0; opacity: 0; overflow: hidden; margin-left: -6px;
+  transition: max-width .4s var(--mgp-snap), opacity .2s ease, margin .4s var(--mgp-snap);
+}
+.mgp-new[data-on="1"] { max-width: 90px; opacity: 1; margin-left: 2px; }
+
+.mgp-dock .mgp-dock-icon {
+  position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  color: rgba(243,241,247,.82); transition: background .16s ease, color .16s ease, transform .35s var(--mgp-spring);
+}
+.mgp-dock .mgp-dock-icon:hover { background: rgba(255,255,255,.12); color: #fff; }
+.mgp-dock .mgp-dock-icon:active { transform: scale(.86); }
+.mgp-dock .mgp-dock-icon svg { display: block; }
+.mgp-ic { grid-area: 1 / 1; display: grid; place-items: center; transition: opacity .2s ease, transform .4s var(--mgp-spring); }
+.mgp-ic-play { opacity: 0; transform: scale(.5) rotate(-90deg); }
+.mgp-dock[data-state="paused"] .mgp-ic-pause { opacity: 0; transform: scale(.5) rotate(90deg); }
+.mgp-dock[data-state="paused"] .mgp-ic-play { opacity: 1; transform: none; }
+.mgp-dock-sep { width: 1px; height: 22px; margin: 0 3px; background: rgba(255,255,255,.12); }
+.mgp-dock .mgp-dock-panel .mgp-i-mark { width: 18px; height: 18px; }
 
 /* Each post briefly lights up as it is collected */
-.mgp-eaten { animation: mgp-eaten 1.1s cubic-bezier(.16,1,.3,1); outline-offset: -2px; }
+.mgp-eaten { animation: mgp-eaten 1s cubic-bezier(.16,1,.3,1); outline-offset: -2px; }
 @keyframes mgp-eaten {
-  0% { outline: 2px solid rgba(124,108,255,0); }
-  18% { outline: 2px solid rgba(124,108,255,.95); }
-  100% { outline: 2px solid rgba(124,108,255,0); }
+  0% { outline: 2px solid rgba(88,101,242,0); }
+  18% { outline: 2px solid rgba(88,101,242,.95); }
+  100% { outline: 2px solid rgba(255,45,149,0); }
 }
 
 /* ---------- per-item save button ---------- */
@@ -89,28 +135,45 @@
   -webkit-backdrop-filter: blur(10px) saturate(1.6); backdrop-filter: blur(10px) saturate(1.6);
   box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 8px 18px -8px rgba(0,0,0,.6);
   opacity: 0; transform: scale(.6) translateY(4px);
-  transition: opacity .2s ease, transform .5s var(--mgp-spring), background .3s ease;
+  transition: opacity .18s ease, transform .4s var(--mgp-spring), background .25s ease, box-shadow .25s ease;
 }
-.mgp-save > svg { grid-area: 1 / 1; transition: transform .45s var(--mgp-spring), opacity .2s; }
-.mgp-save .mgp-i-check { opacity: 0; transform: scale(.4) rotate(-20deg); }
+.mgp-save > * { grid-area: 1 / 1; }
+.mgp-save > svg { transition: transform .4s var(--mgp-spring), opacity .18s; }
 article:hover > .mgp-save, a:hover > .mgp-save, .mgp-save:focus-visible, .mgp-save[data-state] { opacity: 1; transform: none; }
 .mgp-save:hover { background: rgba(40,34,52,.9); transform: scale(1.08); }
-.mgp-save:active { transform: scale(.92); }
-.mgp-save:focus-visible { outline: 2px solid #b4a8ff; outline-offset: 2px; }
+.mgp-save:active { transform: scale(.9); }
+.mgp-save:focus-visible { outline: 2px solid #8fb8ff; outline-offset: 2px; }
 .mgp-save[data-state="saving"]::after {
   content: ""; position: absolute; inset: -3px; border-radius: 50%;
-  border: 2px solid transparent; border-top-color: #b4a8ff; animation: mgp-spin .7s linear infinite;
+  border: 2px solid transparent; border-top-color: var(--mgp-blue); animation: mgp-spin .7s linear infinite;
 }
 @keyframes mgp-spin { to { transform: rotate(360deg); } }
-.mgp-save[data-state="saved"] { background: linear-gradient(135deg, #7c6cff, #e06bff); box-shadow: 0 0 0 1px rgba(255,255,255,.25), 0 8px 18px -8px #7c6cff; }
-.mgp-save[data-state="saved"] .mgp-i-mark { opacity: 0; transform: scale(.4); }
-.mgp-save[data-state="saved"] .mgp-i-check { opacity: 1; transform: none; }
 .mgp-save[data-state="error"] { background: #e5484d; }
-.mgp-save.mgp-burst::before {
-  content: ""; position: absolute; inset: 0; border-radius: 50%;
-  box-shadow: 0 0 0 2px #e06bff; animation: mgp-burst .6s ease-out forwards;
+
+/* Saved badge: solid blue disc, 2px white rim, heavy check. Turns solid hot
+   pink once Gemini has indexed the save. */
+.mgp-badge {
+  display: grid; place-items: center; box-sizing: border-box; width: 22px; height: 22px; border-radius: 50%;
+  color: #fff; border: 2px solid #fff;
+  background: var(--mgp-blue);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 1px rgba(0,0,0,.18), 0 1px 2px rgba(0,0,0,.3);
+  opacity: 0; transform: scale(.3) rotate(-30deg);
+  transition: opacity .18s ease, transform .45s var(--mgp-spring), background-color .5s var(--mgp-snap);
 }
-@keyframes mgp-burst { from { transform: scale(1); opacity: .9; } to { transform: scale(2.1); opacity: 0; } }
+.mgp-badge svg { width: 13px; height: 13px; display: block; }
+.mgp-badge path { stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset .35s var(--mgp-snap) .08s; }
+.mgp-save[data-state="saved"] .mgp-i-mark { opacity: 0; transform: scale(.4); }
+.mgp-save[data-state="saved"] .mgp-badge { opacity: 1; transform: none; }
+.mgp-save[data-state="saved"] .mgp-badge path { stroke-dashoffset: 0; }
+.mgp-save[data-indexed="1"] .mgp-badge { background: var(--mgp-pink); }
+.mgp-save[data-state="saved"] { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.mgp-save[data-state="saved"]:hover { background: rgba(0,0,0,.18); }
+.mgp-save.mgp-burst::before {
+  content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--mgp-blue); animation: mgp-burst .55s ease-out forwards;
+}
+.mgp-save[data-indexed="1"].mgp-burst::before { box-shadow: 0 0 0 2px var(--mgp-pink); }
+@keyframes mgp-burst { from { transform: scale(1); opacity: .9; } to { transform: scale(2); opacity: 0; } }
 
 /* Positions per surface */
 /* X: sits inline in the tweet header, right before the "More" ellipsis, styled
@@ -121,44 +184,42 @@ article:hover > .mgp-save, a:hover > .mgp-save, .mgp-save:focus-visible, .mgp-sa
   color: rgb(113, 118, 123); background: transparent; box-shadow: none;
   -webkit-backdrop-filter: none; backdrop-filter: none;
   opacity: 1; transform: none;
-  transition: color .2s ease, background-color .2s ease, transform .45s var(--mgp-spring);
+  transition: color .16s ease, background-color .16s ease, transform .35s var(--mgp-spring);
 }
 .mgp-save.mgp-tw > svg { width: 18.75px; height: 18.75px; }
-.mgp-save.mgp-tw .mgp-i-mark path { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; transition: fill .2s ease; }
-.mgp-save.mgp-tw .mgp-i-mark circle { fill: currentColor; transition: fill .2s ease; }
-.mgp-save.mgp-tw .mgp-i-check { display: none; }
+.mgp-save.mgp-tw .mgp-i-mark path { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
+.mgp-save.mgp-tw .mgp-i-mark circle { fill: currentColor; }
+.mgp-save.mgp-tw .mgp-badge { width: 21px; height: 21px; }
 .mgp-save.mgp-tw:hover { color: rgb(29, 155, 240); background: rgba(29, 155, 240, .1); transform: none; }
-.mgp-save.mgp-tw:active { transform: scale(.88); }
+.mgp-save.mgp-tw:active { transform: scale(.86); }
 .mgp-save.mgp-tw:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 0; }
 .mgp-save.mgp-tw[data-state="saving"]::after { inset: 4px; border-top-color: rgb(29, 155, 240); }
-.mgp-save.mgp-tw[data-state="saved"] { color: rgb(29, 155, 240); background: transparent; box-shadow: none; }
 .mgp-save.mgp-tw[data-state="saved"]:hover { background: rgba(29, 155, 240, .1); }
-.mgp-save.mgp-tw[data-state="saved"] .mgp-i-mark { opacity: 1; transform: none; animation: mgp-pop .5s var(--mgp-spring); }
-.mgp-save.mgp-tw[data-state="saved"] .mgp-i-mark path { fill: currentColor; }
-.mgp-save.mgp-tw[data-state="saved"] .mgp-i-mark circle { fill: #fff; }
 .mgp-save.mgp-tw[data-state="error"] { color: rgb(244, 33, 46); background: rgba(244, 33, 46, .1); }
-.mgp-save.mgp-tw.mgp-burst::before { inset: 6px; box-shadow: 0 0 0 2px rgb(29, 155, 240); }
-@keyframes mgp-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
 .mgp-save.mgp-ig-tile { left: 8px; top: 8px; }
 .mgp-save.mgp-ig-post { right: 56px; top: 14px; }
+.mgp-save.mgp-ig-tile .mgp-badge, .mgp-save.mgp-ig-post .mgp-badge { width: 26px; height: 26px; }
+.mgp-save.mgp-ig-tile .mgp-badge svg, .mgp-save.mgp-ig-post .mgp-badge svg { width: 15px; height: 15px; }
 
 /* ---------- toasts ---------- */
-.mgp-toasts { all: initial; position: fixed; z-index: 2147483601; top: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.mgp-toasts { all: initial; position: fixed; z-index: 2147483601; top: 18px; right: 18px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
 .mgp-toast {
-  display: flex; align-items: center; gap: 10px; max-width: 360px; padding: 10px 10px 10px 12px;
-  border-radius: 14px; background: rgba(24,20,30,.9); color: #f3eff8;
+  display: flex; align-items: center; gap: 10px; max-width: 360px; padding: 8px 8px 8px 10px;
+  border-radius: 14px; background: rgba(22,20,28,.9); color: #f3f1f7;
   -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
   box-shadow: 0 0 0 1px rgba(255,255,255,.09), 0 18px 40px -16px rgba(0,0,0,.6);
   font: 500 13px/1.4 var(--mgp-font); pointer-events: auto;
   opacity: 0; transform: translateY(-10px) scale(.96);
-  transition: opacity .25s ease, transform .55s var(--mgp-spring);
+  transition: opacity .2s ease, transform .45s var(--mgp-spring);
 }
 .mgp-toast.mgp-in { opacity: 1; transform: none; }
-.mgp-toast-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(135deg, #7c6cff, #e06bff); flex: none; }
-.mgp-toast-btn { all: unset; cursor: pointer; padding: 6px 10px; border-radius: 9px; background: rgba(255,255,255,.12); font: 600 12px/1 var(--mgp-font); white-space: nowrap; }
+.mgp-toast-mark { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--mgp-blue); flex: none; }
+.mgp-toast-btn { all: unset; cursor: pointer; padding: 7px 11px; border-radius: 9px; background: rgba(255,255,255,.12); font: 600 12px/1 var(--mgp-font); white-space: nowrap; transition: background .15s, transform .3s var(--mgp-spring); }
 .mgp-toast-btn:hover { background: rgba(255,255,255,.2); }
+.mgp-toast-btn:active { transform: scale(.94); }
 
 @media (prefers-reduced-motion: reduce) {
-  .mgp-dock, .mgp-save, .mgp-toast { transition-duration: .01s !important; }
-  .mgp-eaten, .mgp-top, .mgp-bot, .mgp-dots { animation: none !important; }
+  .mgp-dock, .mgp-save, .mgp-toast, .mgp-badge, .mgp-dock-stats, .mgp-dock-ctl { transition-duration: .01s !important; }
+  .mgp-eaten, .mgp-top, .mgp-bot, .mgp-dots, .mgp-dock::before, .mgp-swap { animation: none !important; }
 }
